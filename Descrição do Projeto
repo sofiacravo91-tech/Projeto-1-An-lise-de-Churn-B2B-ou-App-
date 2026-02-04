@@ -1,0 +1,113 @@
+# 📊 Projeto 1 – Análise de Churn (B2B ou App)
+
+## 🎯 Objetivo do projeto
+
+Demonstrar capacidade analítica **end‑to‑end** (SQL + Python) respondendo a uma **pergunta real de negócio**:
+
+> **Quais segmentos têm maior churn e que ações de Customer Success poderiam reduzir isso?**
+
+Este projeto é pensado para portfólio — claro, direto e com impacto para times de **Produto, CS e Growth**.
+
+---
+
+## 🧠 Contexto de negócio (storytelling)
+
+Empresas B2B e apps de assinatura sofrem quando perdem clientes cedo demais. O time de CS quer saber:
+
+* **Quem está churnando?**
+* **Quando isso acontece?**
+* **Por quê?**
+* **O que podemos fazer diferente para cada segmento?**
+
+---
+
+## 🗂️ Dados (simulados ou públicos)
+
+Tabelas típicas usadas no projeto:
+
+### `customers`
+
+* `customer_id`
+* `signup_date`
+* `segment` (ex: SMB, Mid‑Market, Enterprise)
+* `plan` (Basic, Pro, Enterprise)
+
+### `subscriptions`
+
+* `customer_id`
+* `start_date`
+* `end_date`
+* `status` (active, canceled)
+
+### `usage`
+
+* `customer_id`
+* `event_date`
+* `events_count`
+
+---
+
+## 📐 Métricas principais
+
+* **Churn rate**
+* **Retention rate**
+* **Cohort analysis** (por mês de entrada)
+* **Tempo médio até churn**
+
+---
+
+## 🧮 Parte 1 – SQL (extração e métricas base)
+
+Exemplos de perguntas respondidas em SQL:
+
+* Churn por segmento
+* Churn por plano
+* Clientes ativos vs churnados por mês
+* Tempo médio até churn
+
+*(queries documentadas e comentadas)*
+
+---
+
+## 🐍 Parte 2 – Python (análise + visualização)
+
+Usando **pandas + matplotlib/seaborn**:
+
+* Cohort de retenção (heatmap)
+* Distribuição de churn por segmento
+* Correlação entre uso e churn
+
+---
+
+## 🔍 Insights esperados
+
+Exemplos de descobertas:
+
+* SMB tem churn 2x maior nos primeiros 90 dias
+* Clientes com baixo uso na 1ª semana têm maior probabilidade de churn
+* Plano Basic churnando mais rápido que Pro
+
+---
+
+## 🚀 Recomendações de CS (parte mais valiosa)
+
+Insights viram ações práticas:
+
+* Onboarding guiado para SMB
+* Alertas de baixo uso nas primeiras 2 semanas
+* Playbook de CS diferente por segmento
+
+---
+
+## 🧩 Entregáveis do portfólio
+
+* Notebook Python bem comentado
+* Queries SQL organizadas
+* README com storytelling de negócio
+* Slides ou resumo executivo (opcional)
+
+---
+
+## 🏁 Próximo passo
+
+➡️ Criar **dataset simulado realista** e começar pelas **queries de churn em SQL**.
