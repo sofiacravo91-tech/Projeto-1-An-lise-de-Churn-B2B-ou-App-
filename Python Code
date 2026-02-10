@@ -1,344 +1,57 @@
+# =========================================
+# CHURN ANALYSIS — SQL + PYTHON (END-TO-END)
+# =========================================
+
+# ---------- 1. IMPORTS E CONEXÃO ----------
 import pandas as pd
-
-#r para corrigir leitura da \
-df = pd.read_excel(r"C:\Users\sofia\OneDrive\base_churn_completa_1200_linhas.xlsx")
-df.head()
-
-SELECT *
-FROM churn_base
-LIMIT 10;
-
-#Validação em SQL
-query = """
-SELECT *
-FROM churn_base
-LIMIT 10;
-"""
-
 import sqlite3
-import pandas as pd
+import matplotlib.pyplot as plt
 
-conn = sqlite3.connect(r"C:\Users\sofia\Downloads\churn.db")
-
-#Churn Rate geral em SQL
-query = """
-SELECT
-    COUNT(*) AS total_customers, #Total linhas é igual ao total de clientes
-    COUNT(CASE WHEN status = 'canceled' THEN 1 END) AS churned_customers, #conta clientes cancelados
-    ROUND( #arredonda para casas decimais
-        COUNT(CASE WHEN status = 'canceled' THEN 1 END) * 1.0 / COUNT(*), #calculo taxa de churn
-        2
-    ) AS churn_rate
-FROM churn_base; #tabela base
-"""
-
-#Churn por segmento
-query = """
-SELECT
-    segment, #Mostra nome do segmento
-    COUNT(*) AS total_customers, #Conta total de clientes por segmento
-    COUNT(CASE WHEN status = 'canceled' THEN 1 END) AS churned_customers, #Conta quantos clientes cancelaram dentro de cada segmento
-    ROUND(
-        COUNT(CASE WHEN status = 'canceled' THEN 1 END) * 1.0 / COUNT(*), #Calcula churn rate por segmento
-        2
-    ) AS churn_rate
-FROM churn_base
-GROUP BY segment #Faz com que tudo seja calculado separado por segmento
-ORDER BY churn_rate DESC; #ordena do maior para o menor
-"""
-
-#Churn por produto/plano
-query = """
-SELECT
-    plan, #Agrupa por plano do produto
-    COUNT(*) AS total_customers, #conta quantos clientes há em cada plano
-    COUNT(CASE WHEN status = 'canceled' THEN 1 END) AS churned_customers, #Quantos clientes cancelam dentro de cada plano
-    ROUND(
-        COUNT(CASE WHEN status = 'canceled' THEN 1 END) * 1.0 / COUNT(*), #Calculo de churn rate por plano
-        2
-    ) AS churn_rate
-FROM churn_base
-GROUP BY plan #Separa calculos por plano
-ORDER BY churn_rate DESC; #ordena do maior para menor
-"""
-
-#Quando o churn acontece
-query = """
-SELECT
-    segment,
-    ROUND(AVG(days_to_churn), 1) AS avg_days_to_churn #Média de dias até o churn
-FROM churn_base #tabela de dados
-WHERE status = 'canceled' #filtra apenas quem cancelou
-GROUP BY segment #Agrupa por segmento
-ORDER BY avg_days_to_churn; #ordena tempo medio ate o churn
-"""
-
-#Uso vs Churn
-query = """
-SELECT
-    status, #Agrupa os resultados por status
-    ROUND(AVG(avg_weekly_events), 1) AS avg_events #Arredonda média de eventos semanais dos clientes
-FROM churn_base
-GROUP BY status; #Agrupa por status
-"""
-
-#Base para cohort mensal pois organiza clientes por mes de signup
-query = """
-SELECT
-    DATE_TRUNC('month', signup_date) AS signup_month, #Agrupa clientes por mês de entrada cria conceito de signup, qualquer dia do mês é equalizado para o dia 1 do mês
-    COUNT(*) AS total_customers, #conta quantos clientes entraram naquele mês
-    COUNT(CASE WHEN status = 'canceled' THEN 1 END) AS churned_customers #Conta no cohort mensal quantos já deram churn
-FROM churn_base
-GROUP BY signup_month #Agrupa clientes por mês de entrada
-ORDER BY signup_month; #ordena mês mais antigo para mais recente
-"""
-
-#PREPARANDO NOTEBOOK EM PYTHON
-
-import sqlite3
-conn = sqlite3.connect("C:/Users/sofia/Downloads/churn.db")
-
-import pandas as pd
-
-df_excel = pd.read_excel(
-    r"C:/Users/sofia/OneDrive/base_churn_completa_1200_linhas.xlsx"
+conn = sqlite3.connect(
+    r"C:/Users/sofia/Downloads/churn.db"
 )
+#Python para abrir o excel
 
-df_excel.head()
-
-#Criar tabela SQL dentro do banco
-df_excel.to_sql(
-    "churn_base",
-    conn,
-    if_exists="replace",
-    index=False
-)
-
-#Conferir se tabela existe
-pd.read_sql(
-    "SELECT name FROM sqlite_master WHERE type='table';",
+# ---------- 2. LER DADOS DO BANCO ----------
+df = pd.read_sql(
+    "SELECT * FROM churn_base;",
     conn
 )
+#Leitura de dados em SQL
 
-#Ler a tabela via SQL
-query = """
-SELECT *
-FROM churn_base
-LIMIT 10;
-"""
-
-df = pd.read_sql(query, conn)
-df
-
-df = pd.read_sql("SELECT * FROM churn_base LIMIT 10;", conn)
-
-#Churn rate geral da empresa
-query = """
-SELECT
-    COUNT(*) AS total_customers,
-    SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) AS churned_customers,
-    ROUND(
-        SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) * 1.0 / COUNT(*),
-        3
-    ) AS churn_rate
-FROM churn_base;
-"""
-pd.read_sql(query, conn)
-
-#Churn por segmento
-query = """
-SELECT
-    segment,
-    COUNT(*) AS total_customers,
-    SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) AS churned_customers,
-    ROUND(
-        SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) * 1.0 / COUNT(*),
-        3
-    ) AS churn_rate
-FROM churn_base
-GROUP BY segment
-ORDER BY churn_rate DESC;
-"""
-pd.read_sql(query, conn)
-
-#Churn por plano
-query = """
-SELECT
-    plan,
-    COUNT(*) AS total_customers,
-    SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) AS churned_customers,
-    ROUND(
-        SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) * 1.0 / COUNT(*),
-        3
-    ) AS churn_rate
-FROM churn_base
-GROUP BY plan
-ORDER BY churn_rate DESC;
-"""
-pd.read_sql(query, conn)
-
-#Quando o churn acontece?
-query = """
-SELECT
-    segment,
-    ROUND(AVG(days_to_churn), 1) AS avg_days_to_churn
-FROM churn_base
-WHERE status = 'canceled'
-GROUP BY segment
-ORDER BY avg_days_to_churn;
-"""
-pd.read_sql(query, conn)
-
-#Uso × churn (sinal comportamental)
-query = """
-SELECT
-    status,
-    ROUND(AVG(avg_weekly_events), 1) AS avg_weekly_events
-FROM churn_base
-GROUP BY status;
-"""
-pd.read_sql(query, conn)
-
-#PYTHON PARA ANÁLISE
-#Trazer base completa para análise
-df = pd.read_sql("SELECT * FROM churn_base;", conn)
-
-#Preparar datas
+# ---------- 3. PREPARAÇÃO DE DADOS ----------
 df["signup_date"] = pd.to_datetime(df["signup_date"])
-df["end_date"] = pd.to_datetime(df["end_date"])
+df["end_date"] = pd.to_datetime(df["end_date"], errors="coerce")
 df["signup_month"] = df["signup_date"].dt.to_period("M")
 
-#Cohort retenção
-cohort = (
-    df
-    .groupby(["signup_month", "status"])
-    .size()
-    .unstack(fill_value=0)
-)
-
-cohort["retention_rate"] = (
-    cohort["active"] / (cohort["active"] + cohort["canceled"])
-)
-
-cohort
-
-#Conectar com SQLite
-conn = sqlite3.connect(
-    r"C:\Users\sofia\Downloads\churn.db"
-)
-
-print(conn) #Check de conexão
-
-#Ler a base do banco e criar cohort por segmento
-df = pd.read_sql("SELECT * FROM churn_base;", conn)
-
-
-#Churn rate geral
-import pandas as pd
-
-churn_rate = (
-    df["status"]
-    .value_counts(normalize=True)
-    .rename("rate")
-    .reset_index()
-)
-
-churn_rate
-
-#Churn por segmento
-churn_by_segment = (
-    df
-    .groupby("segment")["status"]
-    .value_counts(normalize=True)
-    .rename("rate")
-    .reset_index()
-)
-
-churn_by_segment
-
-#Churn por plano
-churn_by_plan = (
-    df
-    .groupby("plan")["status"]
-    .value_counts(normalize=True)
-    .rename("rate")
-    .reset_index()
-)
-
-churn_by_plan
-
-#Quando o churn acontece?
-df_churned = df[df["status"] == "canceled"]
-
-df_churned.groupby("segment")["days_to_churn"].mean()
-
-#Uso × churn (sinal forte)
-df.groupby("status")["avg_weekly_events"].mean()
-
-#COHORT
-#Preparar datas
-df["signup_date"] = pd.to_datetime(df["signup_date"])
-df["signup_month"] = df["signup_date"].dt.to_period("M")
-
-#Criar cohort simples
-cohort = (
-    df
-    .groupby(["signup_month", "status"])
-    .size()
-    .unstack(fill_value=0)
-)
-
-cohort["retention_rate"] = (
-    cohort["active"] / (cohort["active"] + cohort["canceled"])
-)
-
-cohort
-
-#Gráfico de retenção
-import matplotlib.pyplot as plt
-
-plt.figure()
-cohort["retention_rate"].plot(marker="o")
-plt.title("Retention by Signup Cohort")
-plt.xlabel("Signup Month")
-plt.ylabel("Retention Rate")
-plt.show()
-
-#Gráficos comparativos (SMB vs Enterprise)
-import pandas as pd
-import matplotlib.pyplot as plt
-import sqlite3
-
-# 1. Conectar ao banco (EXATAMENTE este caminho)
-conn = sqlite3.connect(r"C:/Users/sofia/Downloads/churn.db")
-
-# 2. Ler dados
-df = pd.read_sql("SELECT * FROM churn_base;", conn)
-
-# 3. Preparar datas
-df["signup_date"] = pd.to_datetime(df["signup_date"])
-df["signup_month"] = df["signup_date"].dt.to_period("M")
-
-# 4. Filtrar apenas SMB e Enterprise
+# ---------- 4. FILTRO DE SEGMENTOS ----------
 df_seg = df[df["segment"].isin(["SMB", "Enterprise"])]
 
-# =========================
-# GRÁFICO 1 — CHURN RATE
-# =========================
-
+# =========================================
+# 5. CHURN RATE POR SEGMENTO
+# =========================================
 churn_rate = (
     df_seg
     .groupby(["segment", "status"])
     .size()
-    .groupby(level=0)
-    .apply(lambda x: x / x.sum())
-    .reset_index(name="rate")
+    .reset_index(name="count")
 )
 
+churn_rate["rate"] = (
+    churn_rate["count"] /
+    churn_rate.groupby("segment")["count"].transform("sum")
+)
+
+# ---------- GRÁFICO: CHURN RATE ----------
 plt.figure()
+
 for seg in churn_rate["segment"].unique():
     data = churn_rate[churn_rate["segment"] == seg]
-    plt.bar(data["status"], data["rate"], label=seg)
+    plt.bar(
+        data["status"],
+        data["rate"],
+        label=seg
+    )
 
 plt.title("Churn Rate — SMB vs Enterprise")
 plt.xlabel("Status")
@@ -346,10 +59,33 @@ plt.ylabel("Rate")
 plt.legend()
 plt.show()
 
-# =========================
-# GRÁFICO 2 — RETENÇÃO (COHORT SIMPLES)
-# =========================
+# =========================================
+# 6. TEMPO MÉDIO ATÉ CHURN
+# =========================================
+avg_days_to_churn = (
+    df_seg[df_seg["status"] == "canceled"]
+    .groupby("segment")["days_to_churn"]
+    .mean()
+)
 
+print("\nTempo médio até churn:")
+print(avg_days_to_churn)
+
+# =========================================
+# 7. USO MÉDIO POR STATUS
+# =========================================
+avg_usage = (
+    df_seg
+    .groupby("status")["avg_weekly_events"]
+    .mean()
+)
+
+print("\nUso médio por status:")
+print(avg_usage)
+
+# =========================================
+# 8. COHORT DE RETENÇÃO POR SEGMENTO
+# =========================================
 cohort = (
     df_seg
     .groupby(["segment", "signup_month", "status"])
@@ -362,7 +98,9 @@ cohort["retention_rate"] = (
     cohort["active"] / (cohort["active"] + cohort["canceled"])
 )
 
+# ---------- GRÁFICO: RETENÇÃO ----------
 plt.figure()
+
 for seg in cohort["segment"].unique():
     data = cohort[cohort["segment"] == seg]
     plt.plot(
@@ -379,3 +117,8 @@ plt.xticks(rotation=45)
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# =========================================
+# FIM DO SCRIPT
+# =========================================
+
